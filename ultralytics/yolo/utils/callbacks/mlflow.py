@@ -26,7 +26,7 @@ def on_pretrain_routine_end(trainer):
         mlflow_location = os.environ['MLFLOW_TRACKING_URI']  # "http://192.168.xxx.xxx:5000"
         mlflow.set_tracking_uri(mlflow_location)
 
-        experiment_name = trainer.args.project or '/Shared/YOLOv8'
+        experiment_name = '/Shared/' + trainer.args.project or '/Shared/YOLOv8'
         experiment = mlflow.get_experiment_by_name(experiment_name)
         if experiment is None:
             mlflow.create_experiment(experiment_name)
@@ -58,7 +58,8 @@ def on_train_end(trainer):
         root_dir = Path(__file__).resolve().parents[3]
         run.log_artifact(trainer.last)
         run.log_artifact(trainer.best)
-        run.pyfunc.log_model(artifact_path=experiment_name,
+        LOGGER.warning(f'Trying to save artifaces in {str(trainer.save_dir)}')
+        run.pyfunc.log_model(artifact_path=experiment_name.replace("/Shared/", ""),
                              code_path=[str(root_dir)],
                              artifacts={'model_path': str(trainer.save_dir)},
                              python_model=run.pyfunc.PythonModel())
