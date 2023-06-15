@@ -30,8 +30,10 @@ def on_pretrain_routine_end(trainer):
 
         experiment_name = '/Shared/' + trainer.args.project or '/Shared/YOLOv8'
     
-        while (experiment := mlflow.get_experiment_by_name(experiment_name)) is None:
-            experiment_name = mlflow.create_experiment(experiment_name)
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        if experiment is None:
+            _id = mlflow.create_experiment(experiment_name)
+            experiment = mlflow.get_experiment_by_name(_id)
 
         mlflow.set_experiment(experiment_name)
 
