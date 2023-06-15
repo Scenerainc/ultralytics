@@ -5,15 +5,17 @@ import re
 from pathlib import Path
 
 from ultralytics.yolo.utils import LOGGER, TESTS_RUNNING, colorstr
+from .git_tags import repository_tags, DirtyGitRepo
 
 try:
     import mlflow
-
     assert not TESTS_RUNNING  # do not log pytest
     assert hasattr(mlflow, '__version__')  # verify package is not directory
 except (ImportError, AssertionError):
     mlflow = None
 
+DEVELOPMENT = os.getenv("DEVELOPMENT", "FALSE").upper() in ["TRUE", "YES", "Y", "1"]
+REPO_TAGS = repository_tags(suppress=DEVELOPMENT) # put it here so it fails sooner
 
 def on_pretrain_routine_end(trainer):
     """Logs training parameters to MLflow."""
@@ -27,9 +29,10 @@ def on_pretrain_routine_end(trainer):
         mlflow.set_tracking_uri(mlflow_location)
 
         experiment_name = '/Shared/' + trainer.args.project or '/Shared/YOLOv8'
-        experiment = mlflow.get_experiment_by_name(experiment_name)
-        if experiment is None:
-            mlflow.create_experiment(experiment_name)
+    
+        while (experiment := mlflow.get_experiment_by_name(experiment_name)) is None:
+            experiment_name = mlflow.create_experiment(experiment_name)
+
         mlflow.set_experiment(experiment_name)
 
         prefix = colorstr('MLFlow: ')
@@ -39,7 +42,9 @@ def on_pretrain_routine_end(trainer):
                 active_run = mlflow.start_run(experiment_id=experiment.experiment_id)
             run_id = active_run.info.run_id
             LOGGER.info(f'{prefix}Using run_id({run_id}) at {mlflow_location}')
-            run.log_params(vars(trainer.model.args))
+            params: dict = vars(trainer.model.args)
+            params.update(REPO_TAGS)
+            run.log_params(params)
         except Exception as err:
             LOGGER.error(f'{prefix}Failing init - {repr(err)}')
             LOGGER.warning(f'{prefix}Continuing without Mlflow')
