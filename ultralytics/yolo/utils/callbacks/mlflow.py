@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 from ultralytics.yolo.utils import LOGGER, TESTS_RUNNING, colorstr
-from .git_tags import repository_tags
+
 
 try:
     import mlflow
