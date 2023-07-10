@@ -14,9 +14,6 @@ try:
 except (ImportError, AssertionError):
     mlflow = None
 
-DEVELOPMENT = os.getenv("DEVELOPMENT", "FALSE").upper() in ["TRUE", "YES", "Y", "1"]
-REPO_TAGS = repository_tags(suppress=DEVELOPMENT) # put it here so it fails sooner
-
 def on_pretrain_routine_end(trainer):
     """Logs training parameters to MLflow."""
     global mlflow, run, run_id, experiment_name
